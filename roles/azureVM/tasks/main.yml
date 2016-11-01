@@ -1,0 +1,112 @@
+- name: Create a resource group
+  azure_rm_resourcegroup:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    name: "{{ default_name }}"
+    location: "westeurope"
+
+- name: Create storage account
+  azure_rm_storageaccount:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    name: "{{ default_name }}"
+    account_type: Standard_LRS
+
+- name: Create virtual network
+  azure_rm_virtualnetwork:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    name: "{{ default_name }}"
+    address_prefixes: "{{ net_subnet_pref }}"
+
+- name: Add subnet
+  azure_rm_subnet:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    name: "{{ default_name }}"
+    address_prefix: "{{ net_subnet_pref }}"
+    virtual_network: "{{ default_name }}"
+
+- name: Create public ip
+  azure_rm_publicipaddress:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    allocation_method: Static
+    name: "{{ default_name }}"
+
+- name: Create security group that open needed ports
+  azure_rm_securitygroup:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    name: "{{ default_name }}"
+    rules:
+      - name: SSH
+        protocol: Tcp
+        destination_port_range: 22
+        access: Allow
+        priority: 100
+        direction: Inbound
+      - name: HTTP
+        protocol: Tcp
+        destination_port_range: 80
+        access: Allow
+        priority: 200
+        direction: Inbound
+
+- name: Create NIC
+  azure_rm_networkinterface:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    name: "{{ default_name }}"
+    virtual_network: "{{ default_name }}"
+    subnet: "{{ default_name }}"
+    public_ip_name: "{{ default_name }}"
+    security_group: "{{ default_name }}"
+
+- name: Create virtual machine
+  azure_rm_virtualmachine:
+    client_id: "{{ client_id }}"
+    secret: "{{ secret }}"
+    subscription_id: "{{ subscription_id }}"
+    tenant: "{{ tenant }}"
+    resource_group: "{{ default_name }}"
+    name: "{{ default_name }}"
+    vm_size: Standard_D1
+    storage_account: "{{ default_name }}"
+    storage_container: "{{ default_name }}"
+    storage_blob: "{{ default_name }}.vhd"
+    admin_username: "azure_admin"
+    ssh_public_keys:
+      - path: /home/ubuntu/.ssh/autorized_keys
+        key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC6Sna1mJPxQ3iDhegjmJTIL6rXF7/c5TiLCJFFTkQsb7gPpcWOJr3nMtTFfs4XQkbmIN65dji1QfM+koZX0kctij2uyj1QiFaei6XI3RdgaWp3WgnyRJNLVxBzOQcwtRDkR2OKSYXzrgwIy/4sFJ8ZJt4cHLrXXjFOWzHpWh726GdX6QQ4PGNqxe1ktXdZezJs1RtB9317KGP410w8mx/cdCCWHn6mVqDtURlY/hvKa8Fi4n73oss8R6atCpZmobKpCxS+6J1hsrGI5truOKILl2Y7xqnkKkaGgN5oHPf37mHLUHekCswt6PIzAYeFTCDBkJ0Ox9vvw8fyDFmUyald ubuntu@ubuntu"
+    network_interfaces: "{{ default_name }}"
+    image:
+      offer: CentOS
+      publisher: OpenLogic
+      sku: '7.1'
+      version: latest
+  register: azure_public_ip
+- debug: msg="{{ vm_output.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces.0.properties.ipConfigurations.0.properties.publicIPAddress.properties.ipAddress }}"
+
+- name: Write to hosts
+  lineinfile: dest=hosts line="{{ vm_output.ansible_facts.azure_vm.properties.networkProfile.networkInterfaces.0.properties.ipConfigurations.0.properties.publicIPAddress.properties.ipAddress }}"

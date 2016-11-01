@@ -1,0 +1,9 @@
+- hosts: localhost
+  connection: local
+  roles:
+    - azureVM
+
+- hosts: remote
+  become: yes
+  roles:
+    - containers

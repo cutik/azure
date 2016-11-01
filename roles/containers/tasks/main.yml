@@ -1,0 +1,23 @@
+- name: Adding EPEL repo
+  yum: name=epel-release state=latest
+
+- name: Adding Docker repo
+  yum_repository:
+    name: docker
+    description: Docker Repo
+    baseurl: https://yum.dockerproject.org/repo/main/centos/7/
+    enabled: yes
+    gpgcheck: yes
+    gpgkey: https://yum.dockerproject.org/gpg
+
+- name: Installing docker-engine
+  yum: name=docker-engine
+
+- name: Starting and enabling docker service
+  service: name=docker state=started enabled=yes
+
+- name: Copying docker-compose and depended files
+  copy: src=roles/files/docker dest=/tmp/docker
+
+- name: Running compose
+  shell: cd /tmo/docker && docker-compose up -d

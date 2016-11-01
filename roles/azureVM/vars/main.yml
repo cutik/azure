@@ -1,0 +1,7 @@
+client_id: ********SECRET********
+tenant: ********SECRET********
+secret: ********SECRET********
+subscription_id: ********SECRET********
+
+default_name: boldin
+net_subnet_pref: 192.168.0.0/24
